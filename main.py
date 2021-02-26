@@ -45,7 +45,8 @@ def terminate():
 def start_screen():
     intro_text = ["ПЕРЕМЕЩЕНИЕ ГЕРОЯ", "",
                   "Правила игры",
-                  "Перемещение происходит клавишами стрелок"]
+                  "Перемещение происходит клавишами стрелок,",
+                  "Также камера двигается за персонажем"]
 
     fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
@@ -106,21 +107,21 @@ class Player(pygame.sprite.Sprite):
 
     def move(self, side):
         if side == 'L':
-            self.rect.x -= 50
+            self.rect.x -= tile_width
             if pygame.sprite.spritecollideany(self, block_group):
-                self.rect.x += 50
+                self.rect.x += tile_width
         if side == 'R':
-            self.rect.x += 50
+            self.rect.x += tile_width
             if pygame.sprite.spritecollideany(self, block_group):
-                self.rect.x -= 50
+                self.rect.x -= tile_width
         if side == 'U':
-            self.rect.y -= 50
+            self.rect.y -= tile_height
             if pygame.sprite.spritecollideany(self, block_group):
-                self.rect.y += 50
+                self.rect.y += tile_height
         if side == 'D':
-            self.rect.y += 50
+            self.rect.y += tile_height
             if pygame.sprite.spritecollideany(self, block_group):
-                self.rect.y -= 50
+                self.rect.y -= tile_height
 
 
 player = None
@@ -145,9 +146,27 @@ def generate_level(level):
     return new_player, x, y
 
 
+class Camera:
+    # зададим начальный сдвиг камеры
+    def __init__(self):
+        self.dx = 0
+        self.dy = 0
+
+    # сдвинуть объект obj на смещение камеры
+    def apply(self, obj):
+        obj.rect.x += self.dx
+        obj.rect.y += self.dy
+
+    # позиционировать камеру на объекте target
+    def update(self, target):
+        self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
+        self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+
+
 start_screen()
 running = True
 player, level_x, level_y = generate_level(load_level('level.txt'))
+camera = Camera()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -161,7 +180,11 @@ while running:
                 player.move('U')
             if event.key == pygame.K_DOWN:
                 player.move('D')
+    screen.fill('black')
     player.update()
+    camera.update(player)
+    for sprite in all_sprites:
+        camera.apply(sprite)
     all_sprites.draw(screen)
     tiles_group.draw(screen)
     player_group.draw(screen)
