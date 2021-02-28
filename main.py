@@ -4,6 +4,11 @@ import os
 
 FPS = 50
 
+file = 'data/' + input('Введите название файла(поиск в файле data): ')
+if not os.path.isfile(file):
+    print('Такого файла нет')
+    sys.exit()
+file = file.replace('data/', '')
 pygame.init()
 pygame.display.set_caption('Game')
 WIDTH = 500
@@ -147,7 +152,7 @@ def generate_level(level):
 
 start_screen()
 running = True
-player, level_x, level_y = generate_level(load_level('level.txt'))
+player, level_x, level_y = generate_level(load_level(file))
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -161,6 +166,7 @@ while running:
                 player.move('U')
             if event.key == pygame.K_DOWN:
                 player.move('D')
+    screen.fill('black')
     player.update()
     all_sprites.draw(screen)
     tiles_group.draw(screen)
