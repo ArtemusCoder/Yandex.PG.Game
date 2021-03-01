@@ -1,3 +1,5 @@
+from pprint import pprint
+
 import pygame
 import sys
 import os
@@ -33,8 +35,13 @@ def load_level(filename):
     filename = "data/" + filename
     with open(filename, 'r') as mapFile:
         level_map = [line.strip() for line in mapFile]
-    max_width = max(map(len, level_map))
-    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+
+    return list(level_map)
+
+
+test = load_level('level.txt')
+field = [[None] * len(test[0]) for _ in range(len(test))]
+FIELD = [[None] * len(test[0]) for _ in range(len(test))]
 
 
 def terminate():
@@ -104,24 +111,65 @@ class Player(pygame.sprite.Sprite):
         self.image = player_image
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 15, tile_height * pos_y + 5)
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.x = 0
+        self.y = 0
 
     def move(self, side):
+        global field
         if side == 'L':
-            self.rect.x -= tile_width
-            if pygame.sprite.spritecollideany(self, block_group):
-                self.rect.x += tile_width
+            if not isinstance(FIELD[self.pos_x - 1][self.pos_y], Wall):
+                self.x -= 1
+                all_sprites.empty()
+                block_group.empty()
+                tiles_group.empty()
+                for y in range(level_y + 1):
+                    for x in range(level_x + 1):
+                        if level[(y + self.y) % (level_y + 1)][(x + self.x) % (level_x + 1)] == '#':
+                            FIELD[x][y] = Wall('wall', x, y)
+                        else:
+                            FIELD[x][y] = Tile('empty', x, y)
+                    print()
         if side == 'R':
-            self.rect.x += tile_width
-            if pygame.sprite.spritecollideany(self, block_group):
-                self.rect.x -= tile_width
+            if not isinstance(FIELD[self.pos_x + 1][self.pos_y], Wall):
+                self.x += 1
+                all_sprites.empty()
+                block_group.empty()
+                tiles_group.empty()
+                for y in range(level_y + 1):
+                    for x in range(level_x + 1):
+                        if level[(y + self.y) % (level_y + 1)][(x + self.x) % (level_x + 1)] == '#':
+                            FIELD[x][y] = Wall('wall', x, y)
+                        else:
+                            FIELD[x][y] = Tile('empty', x, y)
+                    print()
         if side == 'U':
-            self.rect.y -= tile_height
-            if pygame.sprite.spritecollideany(self, block_group):
-                self.rect.y += tile_height
+            print(FIELD[self.pos_x][self.pos_y - 1])
+            if not isinstance(FIELD[self.pos_x][self.pos_y - 1], Wall):
+                self.y -= 1
+                all_sprites.empty()
+                block_group.empty()
+                tiles_group.empty()
+                for y in range(level_y + 1):
+                    for x in range(level_x + 1):
+                        if level[(y + self.y) % (level_y + 1)][(x + self.x) % (level_x + 1)] == '#':
+                            FIELD[x][y] = Wall('wall', x, y)
+                        else:
+                            FIELD[x][y] = Tile('empty', x, y)
+                    print()
         if side == 'D':
-            self.rect.y += tile_height
-            if pygame.sprite.spritecollideany(self, block_group):
-                self.rect.y -= tile_height
+            if not isinstance(FIELD[self.pos_x][self.pos_y + 1], Wall):
+                self.y += 1
+                all_sprites.empty()
+                block_group.empty()
+                tiles_group.empty()
+                for y in range(level_y + 1):
+                    for x in range(level_x + 1):
+                        if level[(y + self.y) % (level_y + 1)][(x + self.x) % (level_x + 1)] == '#':
+                            FIELD[x][y] = Wall('wall', x, y)
+                        else:
+                            FIELD[x][y] = Tile('empty', x, y)
 
 
 player = None
@@ -133,37 +181,27 @@ player_group = pygame.sprite.Group()
 
 
 def generate_level(level):
+    global field
     new_player, x, y = None, None, None
+    print(field)
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
-                Tile('empty', x, y)
+                t = Tile('empty', x, y)
+                FIELD[x][y] = t
             elif level[y][x] == '#':
-                Wall('wall', x, y)
+                w = Wall('wall', x, y)
+                FIELD[x][y] = w
             elif level[y][x] == '@':
-                Tile('empty', x, y)
+                t = Tile('empty', x, y)
+                FIELD[x][y] = t
                 new_player = Player(x, y)
-    return new_player, x, y
-
-
-class Camera:
-    def __init__(self):
-        self.dx = 0
-        self.dy = 0
-
-    def apply(self, obj):
-        obj.rect.x += self.dx
-        obj.rect.y += self.dy
-
-    def update(self, target):
-        self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
-        self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+    return new_player, x, y, level
 
 
 start_screen()
 running = True
-player, level_x, level_y = generate_level(load_level('level.txt'))
-camera = Camera()
+player, level_x, level_y, level = generate_level(load_level('level.txt'))
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -178,12 +216,10 @@ while running:
             if event.key == pygame.K_DOWN:
                 player.move('D')
     screen.fill('black')
-    player.update()
-    camera.update(player)
-    for sprite in all_sprites:
-        camera.apply(sprite)
     all_sprites.draw(screen)
+    block_group.draw(screen)
     tiles_group.draw(screen)
+    player.update()
     player_group.draw(screen)
     pygame.display.flip()
     clock.tick(FPS)
